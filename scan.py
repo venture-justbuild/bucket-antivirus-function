@@ -41,19 +41,18 @@ from common import create_dir
 from common import get_timestamp
 
 
-def event_object(event, event_source="s3"):
+def event_object(event):
 
-    # SNS events are slightly different
-    if event_source.upper() == "SNS":
-        event = json.loads(event["Records"][0]["Sns"]["Message"])
-
-    # Break down the record
-    records = event["Records"]
-    if len(records) == 0:
-        raise Exception("No records found in event!")
-    record = records[0]
-
-    s3_obj = record["s3"]
+    record = event["Records"][0]
+    event_source = record["EventSource"]
+    if event_source == "aws:sns":
+        body = record["Sns"]["Message"]
+        s3_obj = json.loads(body)
+    if event_source == "aws:sqs":
+        body = record["body"]
+        s3_obj = json.loads(body)
+    if event_source == "aws:s3":
+        s3_obj = record["s3"]
 
     # Get the bucket name
     if "bucket" not in s3_obj:
@@ -205,11 +204,10 @@ def lambda_handler(event, context):
 
     # Get some environment variables
     ENV = os.getenv("ENV", "")
-    EVENT_SOURCE = os.getenv("EVENT_SOURCE", "S3")
 
     start_time = get_timestamp()
     print("Script starting at %s\n" % (start_time))
-    s3_object = event_object(event, event_source=EVENT_SOURCE)
+    s3_object = event_object(event)
 
     if str_to_bool(AV_PROCESS_ORIGINAL_VERSION_ONLY):
         verify_s3_object_version(s3, s3_object)

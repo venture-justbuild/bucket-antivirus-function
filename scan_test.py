@@ -51,33 +51,32 @@ class TestScan(unittest.TestCase):
         )
 
     def test_sns_event_object(self):
-        event = {
-            "Records": [
-                {
-                    "s3": {
-                        "bucket": {"name": self.s3_bucket_name},
-                        "object": {"key": self.s3_key_name},
-                    }
-                }
-            ]
+        body = {
+            "bucket": {"name": self.s3_bucket_name},
+            "object": {"key": self.s3_key_name},
         }
-        sns_event = {"Records": [{"Sns": {"Message": json.dumps(event)}}]}
-        s3_obj = event_object(sns_event, event_source="sns")
+        sns_event = {"Records": [{"EventSource": "aws:sns", "Sns": {"Message": json.dumps(body)}}]}
+        s3_obj = event_object(sns_event)
         expected_s3_object = self.s3.Object(self.s3_bucket_name, self.s3_key_name)
-        self.assertEquals(s3_obj, expected_s3_object)
+        self.assertEqual(s3_obj, expected_s3_object)
+
+    def test_sqs_event_object(self):
+        body = {
+            "bucket": {"name": self.s3_bucket_name},
+            "object": {"key": self.s3_key_name},
+        }
+        sqs_event = {"Records": [{"EventSource": "aws:sqs", "body": json.dumps(body)}]}
+        s3_obj = event_object(sqs_event)
+        expected_s3_object = self.s3.Object(self.s3_bucket_name, self.s3_key_name)
+        self.assertEqual(s3_obj, expected_s3_object)
 
     def test_s3_event_object(self):
-        event = {
-            "Records": [
-                {
-                    "s3": {
-                        "bucket": {"name": self.s3_bucket_name},
-                        "object": {"key": self.s3_key_name},
-                    }
-                }
-            ]
+        body = {
+            "bucket": {"name": self.s3_bucket_name},
+            "object": {"key": self.s3_key_name},
         }
-        s3_obj = event_object(event)
+        s3_event = {"Records": [{"EventSource": "aws:s3", "s3": body}]}
+        s3_obj = event_object(s3_event)
         expected_s3_object = self.s3.Object(self.s3_bucket_name, self.s3_key_name)
         self.assertEquals(s3_obj, expected_s3_object)
 
